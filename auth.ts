@@ -1,9 +1,9 @@
 import NextAuth from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
 import { authConfig } from './auth.config';
-import { sql } from '@vercel/postgres';
+import Credentials from 'next-auth/providers/credentials';
 import { z } from 'zod';
-import type { User } from '@/app/lib/definitions';
+import { sql } from '@vercel/postgres';
+import type { User } from './app/lib/definitions';
 import bcrypt from 'bcrypt';
 
 async function getUser(email: string): Promise<User | undefined> {
@@ -39,4 +39,23 @@ export const { auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string;
+        session.user.email = token.email as string;
+      }
+      return session;
+    },
+  },
+  pages: {
+    signIn: '/login',
+  },
 });
